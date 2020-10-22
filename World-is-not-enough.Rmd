@@ -20,7 +20,7 @@ source("../DATA/movavg.R")
 db <- db <- dbConnect(RSQLite::SQLite(),dbname= "../COVIDDB/COVID.sqlite3")
 df <- dbGetQuery(db,"select * from JHUDATA")
 df$date <- as.Date(df$date)
-df <- df[order(df$date,decreasing = TRUE),]
+df <- df[order(df$date),]
 ```
 ```{r}
 World <- dbGetQuery(db,"select * from ECDC")
@@ -36,16 +36,25 @@ world_deaths <- aggregate(Deaths~Reported,World,FUN=sum)
 ```{r}
 df <- subset(df,date =="2020-10-16")
 df$Rate <- df$deaths/df$confirmed
-summary(df$Rate)
+df_lt <- subset(df,Rate <=0.024)
+df_gt <- subset(df, Rate >=0.0241)
+mean(df$Rate)
 ```
 
 ### Plot Death Rate by Country
 
 ```{r}
-ggplot(df) + geom_col(aes(x=country,y=Rate)) + coord_flip() +
+ggplot(df_gt) + geom_col(aes(x=reorder(country,Rate),y=Rate)) + coord_flip() +
   scale_y_continuous(labels = scales::percent) +
-  geom_hline(yintercept = 0.025,col="red")
+  geom_hline(yintercept = 0.025,col="red") +
+  labs(title="Countries with Deaths >=2.41%")
+
+ggplot(df_lt) + geom_col(aes(x=reorder(country,Rate),y=Rate)) + coord_flip() +
+  scale_y_continuous(labels = scales::percent) +
+  geom_hline(yintercept = 0.025,col="red") +
+  labs(title="Countries with Death Rates <= 2.4%")
 ```
+
 ## Daily Cases and Deaths for the World
 
 ```{r}
