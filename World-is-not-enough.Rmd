@@ -1,11 +1,11 @@
 ---
 title: "COVID-19 The World is Not Enough"
 author: "David Jackson"
-date: "10/17/2020"
+date: "11/04/2020"
 output: 
   html_document: 
     fig_width: 9
-    fig_height: 7
+    fig_height: 5
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(scales)
 library(RSQLite)
+library(plotly)
 ```
 ```{r,echo=FALSE}
 rm(list=ls())
@@ -21,6 +22,7 @@ db <- db <- dbConnect(RSQLite::SQLite(),dbname= "../COVIDDB/COVID.sqlite3")
 df <- dbGetQuery(db,"select * from JHUDATA")
 df$date <- as.Date(df$date)
 df <- df[order(df$date),]
+
 ```
 ```{r}
 World <- dbGetQuery(db,"select * from ECDC")
@@ -29,16 +31,18 @@ World <- World[order(World$Reported),]
 World <- subset(World,Reported >="2020-03-01")
 world_cases <- aggregate(Cases~Reported,World,FUN=sum)
 world_deaths <- aggregate(Deaths~Reported,World,FUN=sum)
+dbDisconnect(db)
 ```
 
 ### Total Cases and Deaths by Country
 
 ```{r}
-df <- subset(df,date =="2020-10-16")
+df <- subset(df,date =="2020-10-31")
 df$Rate <- df$deaths/df$confirmed
+# df <- df[order(df$Rate),]
+# df$Row <- row.names(df)
 df_lt <- subset(df,Rate <=0.024)
 df_gt <- subset(df, Rate >=0.0241)
-mean(df$Rate)
 ```
 
 ### Plot Death Rate by Country
@@ -52,7 +56,9 @@ ggplot(df_gt) + geom_col(aes(x=reorder(country,Rate),y=Rate)) + coord_flip() +
 ggplot(df_lt) + geom_col(aes(x=reorder(country,Rate),y=Rate)) + coord_flip() +
   scale_y_continuous(labels = scales::percent) +
   geom_hline(yintercept = 0.025,col="red") +
-  labs(title="Countries with Death Rates <= 2.4%")
+  labs(title="Countries with Death Rates <= 2.4%") 
+
+
 ```
 
 ## Daily Cases and Deaths for the World
@@ -66,5 +72,6 @@ ggplot(world_cases) + geom_line(aes(x=Reported,y=Cases)) +
 ggplot(world_deaths) + geom_line(aes(x=Reported,y=Deaths)) +
   geom_smooth(aes(x=Reported,y=Deaths),span=0.25) +
   labs(title="World Wide Covid19 Deaths by Day.")
+
 ```
 
